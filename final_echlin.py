@@ -9,7 +9,7 @@ from pyseqdist import hamming as ghosthamm
 from subprocess import check_call
 from collections import defaultdict
 from scipy.stats import entropy, pearsonr
-from scipy.sparse.csgraph import connected_components,csgraph_from_dense
+from scipy.sparse.csgraph import connected_components,csgraph_from_dense, shortest_path
 
 def parse_input(input): #get sequences from a file
     seqs=defaultdict(int)
@@ -111,7 +111,7 @@ def split_seq(seq, n=3):
     else:
         return start
     
-def get_good_seqs(file): #find appropriate reading frame, return sequences with no stop codons in frame
+def get_good_seqs(file): #find appropriate reading frame, return sequences with no stop codons in frame 
     preseqs,seqlens=parse_input(file)
     seqs=remove_n(preseqs,seqlens)
     zeros=defaultdict(int)
@@ -120,8 +120,6 @@ def get_good_seqs(file): #find appropriate reading frame, return sequences with 
     i=0
     for seq in seqs:
         i+=1
-        # print(">seq_"+str(i))
-        # print(seq)
         freq=seqs[seq]
         seq0=seq
         seq1=seq[1:]
@@ -129,7 +127,6 @@ def get_good_seqs(file): #find appropriate reading frame, return sequences with 
         codons0=split_seq(seq0)
         codons1=split_seq(seq1)
         codons2=split_seq(seq2) 
-        # print([(codons[q], q) for q in codons2])
         if not is_there_stop(codons0):
             zeros[seq]+=freq
         if not is_there_stop(codons1):
@@ -257,13 +254,11 @@ def get_wa0(proteins,total_reads):
 def degree_corell(g):
     v1=[]
     v2=[]
-    # print(g.edges())
     for edge in g.edges():
         i=edge[0]
         j=edge[1]
         v1.append(g.degree(i))
         v2.append(g.degree(j))
-    # print(len(v1),len(v2))
     corr,_=pearsonr(v1,v2)
     return corr
     
@@ -298,6 +293,8 @@ def get_adj(DM,thr_dist,seqnum):
     return 1*(DM <= thr_dist) - np.eye(seqnum)    
     
 def get_std_dist(dvec):
+    if len(dvec)<2:
+        return 0
     return np.std(dvec,ddof=1)
 
 def kmer_entropy_inscape(seqs,k):# calculate kmer entropy 
@@ -363,9 +360,7 @@ def process_component(only_seqs,only_freqs,component,comps_info,adj,dists):
     nodes_real_names=comps_info[component]
     adj_comp,comp_size=smaller_adj(adj,nodes_real_names)
     sparseMatrixComp = csgraph_from_dense(adj_comp)
-    path_dists = shortest_path(sparseMatrixComp,
-    method='auto', directed=False, return_predecessors=False, 
-    unweighted=True, overwrite=False)    
+    path_dists = shortest_path(sparseMatrixComp, method='auto', directed=False, return_predecessors=False, unweighted=True, overwrite=False)
     links=[]
     for p in range(comp_size-1):
         for q in range(p+1, comp_size):
@@ -380,13 +375,6 @@ def process_component(only_seqs,only_freqs,component,comps_info,adj,dists):
         comp_seqs[seq]=freq
     return links,comp_seqs,adj_comp,comp_size
     
-def get_pagerank_broken(g,only_freqs): #pagerank and only_freqs are in a different order
-    page_rank = list(nx.pagerank_numpy(g).values())
-    print(page_rank)
-    print(only_freqs)
-    corr,_=pearsonr(page_rank,only_freqs)
-    return corr
-    
 def one_away(seq1,seq2):
     if len(seq1)!=len(seq2):
         exit('error why are seqs different len')
@@ -399,6 +387,8 @@ def one_away(seq1,seq2):
     return True
     
 def get_pagerank(seqs,only_freqs):
+    if len(only_freqs)<2:
+        return 0
     g=nx.Graph()
     for seq1,seq2 in itertools.combinations(seqs,2):
         if one_away(seq1,seq2):
@@ -416,9 +406,6 @@ def get_pagerank(seqs,only_freqs):
     # for node in g.nodes():
         # freqs.append(seqs[node])
     page_rank = list(nx.pagerank_numpy(g).values())
-    # print(len(seqs))
-    # print(len(only_freqs))
-    # print(len(page_rank))
     corr,_=pearsonr(only_freqs,page_rank)
     return corr
     # print(freqs)
@@ -427,8 +414,10 @@ def get_pagerank(seqs,only_freqs):
     # return corr
         
     
-def boxStats(boxNet): #fordavid other three calculated here? 
+def boxStats(boxNet): 
     boxNodes = len(boxNet)
+    if boxNodes==1:
+        return 0,0,0
     boxMat = nx.to_numpy_matrix(boxNet)
     ##boxNet characteristics
     degreeRaw = list(boxNet.degree())
@@ -441,13 +430,16 @@ def boxStats(boxNet): #fordavid other three calculated here?
     lapMatBox= np.asarray(nx.to_numpy_matrix(nx.from_scipy_sparse_matrix(nx.laplacian_matrix(boxNet))))
     degreeSumBox = np.sum(degreeBox)
     lapMatBoxNorm =  np.divide(lapMatBox, degreeSumBox, dtype = float)
-    eValsLapBoxNorm = np.linalg.eigvals(lapMatBoxNorm)
-    eValsLapNonZeroBoxNorm = []
-    for i in eValsLapBoxNorm:
-        j = abs(i)
-        if j > 0:
-            eValsLapNonZeroBoxNorm.append(j)
-    vonEntropyBox = np.divide(entropyCalc(eValsLapNonZeroBoxNorm), math.log(boxNodes,2), dtype = float)
+    try:
+        eValsLapBoxNorm = np.linalg.eigvals(lapMatBoxNorm)
+        eValsLapNonZeroBoxNorm = []
+        for i in eValsLapBoxNorm:
+            j = abs(i)
+            if j > 0:
+                eValsLapNonZeroBoxNorm.append(j)
+        vonEntropyBox = np.divide(entropyCalc(eValsLapNonZeroBoxNorm), math.log(boxNodes,2), dtype = float)
+    except numpy.linalg.LinAlgError:
+        vonEntropyBox=0
     degreeEntropyBox = np.divide(entropyCalc(degreeNormBox), math.log(boxNodes,2), dtype = float)
     KSEntropyBox = np.divide(math.log(spectralRadiusAdjBox, 2), math.log(boxNodes-1,2), dtype = float)
     return vonEntropyBox, KSEntropyBox, degreeEntropyBox
@@ -462,9 +454,74 @@ def entropyCalc(freqM):#different results than scipy.stats.entropy - how to reso
    
 def list2str(x):
     return ','.join(map(str,x))
-   
+
+def main_1file(file,full_file):
+    vars=['phacelia_score',
+    'atchley_wa0',
+    'meanConsensus',
+    'std_dev',
+    'inscape_nuc_kmer_7',
+    'inscape_prot_kmer_3',
+    'degree_assortativity',
+    'VonEntropy',
+    'KSEntropy',
+    'degreeEntropy',
+    'corrPageRankfreq']
+    preseqs=get_good_seqs(file)
+    if len(preseqs)==0: 
+        print(file+',reading frame error')
+        return 0
+    ali=align(preseqs)
+    seqlen=len(list(ali.keys())[0])
+    seqs=remove_blanks(ali,seqlen)
+    seqlen=len(list(seqs.keys())[0]) #may have changed if a blank was removed from alignment
+    if type(seqs)==bool:
+        print(file+', parsing error!')
+        return 0
+    only_seqs=list(seqs.keys())
+    only_freqs=list(seqs.values())
+    seqnum=len(seqs)
+    if seqnum==0:
+        print(file+' error! sequence set empty')
+        return 0
+    total_reads=float(sum(only_freqs))
+    rel_freq=np.divide(list(only_freqs),total_reads,dtype='float')
+    dvec,DM=get_dvec(only_seqs,seqnum,seqlen) 
+    adj_1=get_adj(DM,1,seqnum)
+    g=nx.from_numpy_matrix(adj_1)
+    if not full_file:
+        comps_freqlist,major_comp,comps_info=get_comp_freqs(adj_1,rel_freq)
+        links,seqs,adj_1,seqnum=process_component(only_seqs,only_freqs,major_comp,comps_info,adj_1,DM)
+        only_seqs=list(seqs.keys())
+        only_freqs=list(seqs.values())
+        total_reads=float(sum(only_freqs))
+        rel_freq=np.divide(list(only_freqs),total_reads,dtype='float')
+        dvec,DM=get_dvec(only_seqs,seqnum,seqlen) 
+        g=nx.from_numpy_matrix(adj_1)
+    
+    ###############calculate features###############
+    corr_page_rank_freq=get_pagerank(seqs,only_freqs)
+    von_entropy, ks_entropy, degree_entropy = boxStats(g)
+    phacelia_score=phacelia_API(file)
+    proteins=get_proteins(seqs) 
+    atchley_wa0=get_wa0(proteins,total_reads)
+    meanConsensus=nuc44_consensus(only_seqs,seqlen,seqnum)  
+    std_dev=get_std_dist(dvec)
+    inscape_nuc_kmer_7=kmer_entropy_inscape(seqs,7)
+    inscape_prot_kmer_3=kmer_entropy_inscape(proteins,3)
+    if sum(sum(adj_1))<=2:
+        degree_assortativity=0
+    else:
+        degree_assortativity=degree_corell(g) #1
+    s=[phacelia_score,atchley_wa0,meanConsensus,std_dev,inscape_nuc_kmer_7,inscape_prot_kmer_3,degree_assortativity,von_entropy,ks_entropy,degree_entropy,corr_page_rank_freq]
+    # if 'nan' in s:
+        # print(s)
+        # print('nan in output for %s! exiting'%file)
+        # exit()
+    return s
+
 def main(files):
-    one_step=False
+    full_file=False
     vars=['phacelia_score',
     'atchley_wa0',
     'meanConsensus',
@@ -503,7 +560,7 @@ def main(files):
         dvec,DM=get_dvec(only_seqs,seqnum,seqlen) 
         adj_1=get_adj(DM,1,seqnum)
         g=nx.from_numpy_matrix(adj_1)
-        if one_step:
+        if not full_file:
             comps_freqlist,major_comp,comps_info=get_comp_freqs(adj_1,rel_freq)
             links,seqs,adj_1,seqnum=process_component(only_seqs,only_freqs,major_comp,comps_info,adj_1,DM)
             only_seqs=list(seqs.keys())
@@ -512,7 +569,6 @@ def main(files):
             rel_freq=np.divide(list(only_freqs),total_reads,dtype='float')
             dvec,DM=get_dvec(only_seqs,seqnum,seqlen) 
             g=nx.from_numpy_matrix(adj_1)
-        
         ###############calculate features###############
         corr_page_rank_freq=get_pagerank(seqs,only_freqs)
         von_entropy, ks_entropy, degree_entropy = boxStats(g)
