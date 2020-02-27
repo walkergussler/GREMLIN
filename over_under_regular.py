@@ -75,6 +75,20 @@ def custom_tt_split(X_train,y_train):
         acutes_u,chronics_u=undersample(acutes,chronics)
     data_o=np.concatenate([acutes_o,chronics_o])
     data_u=np.concatenate([acutes_u,chronics_u])
+    # print(len(y_train))
+    # print(sum(y_train)[0]*2)
+    # print((len(y_train)-sum(y_train)[0])*2)
+    # print(np.shape(data_o))
+    # print(np.shape(data_u))
+    # print('under')
+    # for row in data_u:
+        # print(list2str(row))
+    # print("===")
+    # print('over')
+    # print("===")
+    # for row in data_o:
+        # print(list2str(row))
+    # exit()
     return data_o[:,:-1],data_o[:,-1],data_u[:,:-1],data_u[:,-1]
     
 def undersample(small_class,big_class):
@@ -95,7 +109,9 @@ data_end=-3
 # sourcefiledic={0:'17',1:'16',2:'13',3:'12',4:'10_1',5:'10_2',6:'5',7:'pelin',8:'6',9:'9'}
 # sourcefiledic={0:'11_model.csv'}
 
-sourcefiledic={0:'17',1:'5',2:'pelin',3:'11',4:'11_no_phacelia'}
+# sourcefiledic={0:'17',1:'5',2:'pelin',3:'11',4:'11_no_phacelia'}
+# sourcefiledic={0:'11_model.csv',1:'11_no_phacelia_model.csv',2:'pelin.csv',3:'phacelia_only.csv'}
+sourcefiledic={0:'pelin_model.csv',1:'11_no_phacelia_model.csv',2:'11_model.csv',3:'phacelia_only.csv'}
 # sourcefiledic={0:'tmp.csv'}
 modeldic={
     0:'random forest',
@@ -116,18 +132,19 @@ for i in range(len(sourcefiledic)):
     reg=[]
     over=[]
     under=[]
-    source_file=sourcefiledic[i]+'_model.csv'
-    # print(source_file)
+    qq=sourcefiledic[i]
+    # print(qq)
+    # print(type(qq))
+    data=pd.read_csv(qq,index_col=0)
+    X=data.iloc[:,0:data_end]
+    y=data['status']
+    groups=data['10_hamming']
+    var_names=list(data)
+    sample_names=data.index.values
+    # X,y,names,groups,samples=ml_data_parser(source_file)
+    x_train,_,y_train,_=train_test_split(X,y)
+    x_over_train,y_over_train,x_under_train,y_under_train=custom_tt_split(x_train,y_train) #make sure train and test don't have the same guy
     for modelid in range(len(modeldic)):
-        data=pd.read_csv(source_file,index_col=0)
-        X=data.iloc[:,0:data_end]
-        y=data['status']
-        groups=data['10_hamming']
-        var_names=list(data)
-        sample_names=data.index.values
-        # X,y,names,groups,samples=ml_data_parser(source_file)
-        x_train,_,y_train,_=train_test_split(X,y)
-        x_over_train,y_over_train,x_under_train,y_under_train=custom_tt_split(x_train,y_train) #make sure train and test don't have the same guy
         if modelid==0:
             clf=RandomForestClassifier(n_estimators=100)
             clf_over=RandomForestClassifier(n_estimators=100)
@@ -157,15 +174,27 @@ for i in range(len(sourcefiledic)):
         reg.append(np.mean(scores))
         over.append(np.mean(scores_over))
         under.append(np.mean(scores_under))
-    total_storage.append([reg,over,under])
-over_under_names=['regular sampling','over sampling','under sampling']
+    total_storage.append([under,reg,over])
+over_under_names=['Undersampling','Regular sampling','Oversampling']
+sourcefiledic={0:'pelin_model.csv',2:'11_no_phacelia_model.csv',3:'11_model.csv',1:'phacelia_only.csv'}
+desired_names=['GSU','Phacelia','DORIS w/o Phacelia','DORIS']
+x=np.zeros([3,4])
 for i in sourcefiledic:
-    print(sourcefiledic[i]+",Random forest,Extra Random Forest,SVM,logistic regression,naive bayes,average")
+    print(desired_names[i]+",Random forest,Extra Random Forest,SVM,logistic regression,naive bayes,average")
     item=total_storage[i]
     for samp_id in range(3):
         avg=np.mean(item[samp_id])
         l=item[samp_id]
+        val=l[1]
         l.insert(0,over_under_names[samp_id])
         l.append(str(avg))
+        x[samp_id,i]=val
         print(list2str(l))
     print()
+
+print(','+list2str(desired_names))
+for a in range(3):
+    qw=list(x[a])
+    qw.insert(0,over_under_names[a])
+    print(list2str(qw))
+    
