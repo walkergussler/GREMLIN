@@ -61,27 +61,27 @@ def main(recent,chronic,test,output,fullfile):
                     exit('error in parsing for parameter calculation for %s!'%file)
                 # fixed_params=np.array(params).reshape(-1,1)
                 x_test.append(params)
-    predictions=clf.predict(x_test)
-    for i in range(len(x_test)):
-        prediction=predictions[i]
-        file=files_test[i]
-        f.write(file+':'+str(prediction)+'\n')
+        predictions=clf.predict(x_test)
+        for i in range(len(x_test)):
+            prediction=predictions[i]
+            file=files_test[i]
+            f.write(file+':'+str(prediction)+'\n')
 
 if __name__=="__main__":
     import argparse # possible arguments to add: delta, nIter
     parser = argparse.ArgumentParser(description='DORIS: predict duration of HCV infection')
     parser.add_argument('-r','--recent', 
         type=str, required=False, default="recent",
-        help="Path to input folder")
+        help="Path to input folder with recent samples")
     parser.add_argument('-c','--chronic', 
         type=str, required=False, default="chronic",
-        help="Path to input folder")
+        help="Path to input folder with chronic samples")
     parser.add_argument('-t','--test', 
         type=str, required=False, default="test",
-        help="Path to input folder")
+        help="Path to input folder with test samples")
     parser.add_argument('-o','--output', 
         type=str, required=False, default="DORIS_output.txt",
-        help="Desired output file")
+        help="Desired output file name")
     parser.add_argument('-f',  '--fullfile', 
         action='store_true', default=False,
         help="Pass this as an argument to process the whole file rather than the largest 1-step connected component. Shown to be less accurate.")
