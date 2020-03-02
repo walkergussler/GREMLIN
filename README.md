@@ -35,3 +35,23 @@ Computes a graph over the set of correlations between features, and draws an edg
 
 Takes in a CSV output from a feature calculation program and scales the data linearly to the floating point range [0,1], also adds known recent/chronic labels to the dataset
 
+### wrapper.py
+
+Trains a model based off data in recent and chronic training folders, issues predictions on test folder
+
+```
+usage: wrapper.py [-h] [-r RECENT] [-c CHRONIC] [-t TEST] [-o OUTPUT] [-f]
+```
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -r RECENT, --recent RECENT
+                        Path to input folder with recent samples
+  -c CHRONIC, --chronic CHRONIC
+                        Path to input folder with chronic samples
+  -t TEST, --test TEST  Path to input folder with test samples
+  -o OUTPUT, --output OUTPUT
+                        Desired output file name
+  -f, --fullfile        Pass this as an argument to process the whole file
+                        rather than the largest 1-step connected component.
+                        Shown to be less accurate.
