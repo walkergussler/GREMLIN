@@ -44,14 +44,15 @@ usage: wrapper.py [-h] [-r RECENT] [-c CHRONIC] [-t TEST] [-o OUTPUT] [-f]
 ```
 
 optional arguments:
+
   -h, --help            show this help message and exit
-  -r RECENT, --recent RECENT
-                        Path to input folder with recent samples
-  -c CHRONIC, --chronic CHRONIC
-                        Path to input folder with chronic samples
-  -t TEST, --test TEST  Path to input folder with test samples
-  -o OUTPUT, --output OUTPUT
-                        Desired output file name
-  -f, --fullfile        Pass this as an argument to process the whole file
-                        rather than the largest 1-step connected component.
-                        Shown to be less accurate.
+
+  -r RECENT, --recent RECENT:Path to input folder with recent samples
+  
+  -c CHRONIC, --chronic CHRONIC:Path to input folder with chronic samples
+  
+  -t TEST, --test TEST:Path to input folder with test samples
+  
+  -o OUTPUT, --output OUTPUT:Desired output file name
+  
+  -f, --fullfile:Pass this as an argument to process the whole file rather than the largest 1-step connected component. Shown to be less accurate than only processing the largest one-step connected network.
