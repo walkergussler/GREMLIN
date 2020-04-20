@@ -4,4 +4,6 @@ test/*
 chronic/*
 *bak
 DORIS_output.txt
-
+acute
+smaller_doris.py
+not_used/*

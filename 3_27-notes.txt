@@ -1,0 +1,9 @@
+oversaple epld/low freq files
+    homogenization of sampling
+set of samples wich are separated for validation
+    equal # acute/chronic
+60 50 10 train test validation 
+what is different about these 13 samples?
+    indeterminate predictions
+email saleem on Monday if clearance hasn't moved
+email everyone to set up a time next week 

@@ -1,0 +1,20 @@
+3 groups of data
+verified acute
+verified chronic
+mystery
+
+---we are here---
+
+Calculate all features (sort out echlin2.py)
+
+-quesitons-
+motifchoice==0
+methodchoice==3
+we can ignore the rest?
+-
+
+get multisurf values
+start with best one
+(find good doubles/triples?)
+bi-directional elimination (stepwise selection)
+https://towardsdatascience.com/feature-selection-using-wrapper-methods-in-python-f0d352b346f
