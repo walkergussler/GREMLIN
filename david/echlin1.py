@@ -134,18 +134,12 @@ def process_component(file,only_seqs,only_freqs,component,output_dir,comps_info,
                 # outputHandle1.write(str(p) + ',' + str(q) + ',' + str(finalDist[p][q]) + ',' + str(adj_comp[p][q]) + ',' + str(path_dists[p][q]) +  ',' + str(freqSub[p]) + ',' + str(freqSub[q]) + '\n')
                 # print(str(p) + ',' + str(q) + ',' + str(finalDist[p][q]) + ',' + str(adj_comp[p][q]) + ',' + str(path_dists[p][q]) +  ',' + str(freqSub[p]) + ',' + str(freqSub[q]))
     with open(out_1, "w") as outputHandle1:    
-        with open(out_3, "w") as outputHandle3:
-            outputHandle3.write('*Vertices ' + str(comp_size) + '\n')
-            for i in range(comp_size):
-                outputHandle3.write(str(i+1) + '\n')
-            outputHandle3.write('*edges' + '\n')                    
-            for p in range(comp_size-1):
-                for q in range(p+1, comp_size):
-                    # print(p,q)
-                    realp=nodes_real_names[p]
-                    realq=nodes_real_names[q]
-                    outputHandle1.write(str(p) + ',' + str(q) + ',' + str(dists[realp,realq]) + ',' + str(adj_comp[p][q]) + ',' + str(path_dists[p][q]) +  ',' + str(only_freqs[realp]) + ',' + str(only_freqs[realq]) + '\n')
-                    outputHandle3.write(str(p+1) + ' ' + str(q+1) + ' ' + str(adj_comp[p][q]) + '\n')
+        for p in range(comp_size-1):
+            for q in range(p+1, comp_size):
+                # print(p,q)
+                realp=nodes_real_names[p]
+                realq=nodes_real_names[q]
+                outputHandle1.write(str(p) + ',' + str(q) + ',' + str(dists[realp,realq]) + ',' + str(adj_comp[p][q]) + ',' + str(path_dists[p][q]) +  ',' + str(only_freqs[realp]) + ',' + str(only_freqs[realq]) + '\n')
                     
     #save .fas file
     comp_seqs=[]

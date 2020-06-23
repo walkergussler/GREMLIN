@@ -118,7 +118,6 @@ def kolmogorov_wrapper(seqs,seqlen): #TODO rel_freq
         freq=seqs[seq]
         total+=freq
         s+=kolmogorov(seq,seqlen)*freq
-        # print(s)
     return s/float(total)
     
 def calc_distance_matrix_slow(finalSeqs): #calculate distance matrix from the 1-step list manually
@@ -251,7 +250,6 @@ def seq_profile(seqs,seqlen,num_seqs):
                 out[id,col]+=1
             else:
                 c+=1
-    # print('number of blanks skipped: '+c')
     return np.divide(out,num_seqs,dtype='float')
 
 def phacelia_API(file):
@@ -408,7 +406,6 @@ def seq2num(seq,seqlen):
     
 def get_pca_components(seqs,num_seqs,seqlen): #TODO move noblanks preprocessing to main
     #fill gaps (for matlab consistency)
-    # print(len(seqs))
     centered_num=[]
     for preseq in seqs:
         if 'N' in preseq or '_' in preseq or '-' in preseq:
@@ -418,9 +415,7 @@ def get_pca_components(seqs,num_seqs,seqlen): #TODO move noblanks preprocessing 
         #make covariance 
         seq_num=seq2num(seq,seqlen)
         centered_num.append(seq_num)
-    # print(centered_num)
-    # print(np.shape(centered_num))
-    # input()
+    
     cov_matrix=np.cov(np.transpose(centered_num))
     w=np.linalg.eig(cov_matrix) 
     eigvec=w[1]
@@ -659,7 +654,7 @@ def synonymous_diff(c1,c2):
         nd=non/len(s)
         return sd
     else:
-        exit('err')
+        exit('error: synonymous_diff expects two codons which have no common characters. exiting')
 
 def dnds_2seq(s1,s2): #in1 is same every time
     S=syn_sum(s1,s2)
@@ -675,7 +670,6 @@ def dnds_2seq(s1,s2): #in1 is same every time
         except ZeroDivisionError: #d_hat_s==0 (how should I handle this?)
             return d_hat_n
     except ValueError:
-        # print('Warning: proportion of synonymous changes greater than or equal to 3/4. Input sequences are too divergent, too short, or contain frame shifts')
         return np.nan
 
 
@@ -684,7 +678,6 @@ def get_major_sequence(seqsDict,freqs):
     c=Counter(freqs)
     s=c[max(c)]
     # if s!=1:
-        # print('WARNING: major sequence frequency detected in %i sequences. This will produce strange results' %s)
     for seq in seqsDict:
         if seqsDict[seq]==m:
             chosen=seq
@@ -706,8 +699,7 @@ def align(seqs):
     os.unlink(catname)
     seqs,_=parse_input(alignname)
     if type(seqs)==bool:
-        print('error parsing aligned seqs!')
-        exit()
+        exit('error parsing aligned seqs!')
     return seqs
 
 def find(s, ch):
@@ -729,9 +721,7 @@ def remove_blanks(seqs,seqlen): #expects aligned sequences
                     o.append(chr)
         for char in blanks:
             if char in o:
-                # print(o)
                 exit('error! did not get all blanks removed?')
-        # print(''.join(o))
         out[''.join(o)]=seqs[seq]
     return out
 
@@ -759,11 +749,8 @@ def remove_n(seqs,seqlens): #does not expect aligned sequences
                 if chr!='N' and chr!='-':
                     o.append(chr)
         if 'N' in o or '-' in o:
-            # print(o)
             exit('error! did not get all blanks removed?')
         i+=1
-        # print(">seq_"+str(i))
-        # print(''.join(o[2:]))
         out[''.join(o)]=seqs[seq]
     return out
 
@@ -794,14 +781,10 @@ def consensus_seq(dict,seqlen):
         return ''.join(out)
         
 def reduce_seqs(preseqs,threshold):
-    # print('-')
-    # print(len(preseqs))
     seqs={}
     for seq in preseqs:
         if preseqs[seq]<=threshold:
             seqs[seq]=preseqs[seq]
-    # print(len(seqs))
-    # print('-')
     return seqs
 
 def get_good_seqs(file): #find appropriate reading frame, return sequences with no stop codons in frame
@@ -813,8 +796,6 @@ def get_good_seqs(file): #find appropriate reading frame, return sequences with 
     i=0
     for seq in seqs:
         i+=1
-        # print(">seq_"+str(i))
-        # print(seq)
         freq=seqs[seq]
         seq0=seq
         seq1=seq[1:]
@@ -822,7 +803,6 @@ def get_good_seqs(file): #find appropriate reading frame, return sequences with 
         codons0=split_seq(seq0)
         codons1=split_seq(seq1)
         codons2=split_seq(seq2) 
-        # print([(codons[q], q) for q in codons2])
         if not is_there_stop(codons0):
             zeros[seq]+=freq
         if not is_there_stop(codons1):
@@ -846,18 +826,14 @@ def get_good_seqs(file): #find appropriate reading frame, return sequences with 
         exit('why has this happened?')
  
 def dnds_wrapper(seqs,freqs):
-    # print('-')
-    # print(len(seqs))
     total_freq=sum(freqs)
     major,non_majors=get_major_sequence(seqs,freqs)
     dnds=0 
     prot_count=0
     proteins=defaultdict(int)
     i=0
-    # print(len(non_majors))
     for seq in seqs:
         prot=translate(seq)
-        # print(prot)
         if 'STOP' not in prot: #discard sequences with unresolvable stop codon in frame
             prot_count+=1
             if seq!=major:
@@ -869,8 +845,6 @@ def dnds_wrapper(seqs,freqs):
                 proteins[prot]+=seqs[seq] 
             else:
                 proteins[prot]=seqs[seq] 
-    # print(proteins,prot_count)
-    # print('-')
     return dnds,proteins,prot_count
 
 def get_adj(DM,thr_dist,num_seqs):
@@ -955,8 +929,6 @@ def degree_distribution(g):
     x=[]
     for i in g.nodes():
         x.append(g.degree(i))
-    # print(x)
-    # input()
     return entropy(x,base=2)
     
 def get_cols(seqs):
@@ -1079,7 +1051,6 @@ def entropyCalc(freqM):#different results than scipy.stats.entropy - how to reso
     for i in freqM:
         if i > 0:
             productVectorM = productVectorM + (i*log(i, 2))
-            # print(i,productVectorM)
     entropy = -1*productVectorM
     return entropy
 
@@ -1231,43 +1202,55 @@ def fractalCalc(dist,nodeNum,nodeList):
         fractalModularityRSquare = np.power(corr, 2, dtype = float)
         return fractalDb, fractalRSquare, fractalDbConstant, fractalModularity, fractalModularityConstant, fractalModularityRSquare, diameterPathSelf, avgPathDistSelf, nEdgesSelf, edgePSelf, radiusSelf, kCoreSelf, degreeAssortSelf, globalEfficiencySelf, avgDegreeSelf, maxDegreeSelf, spectralRadiusAdjSelf, spectralGapSelf, popEntropySelf,scaledSpectralRadiusSelf, colorNumSelf, avgClustCoeffSelf, vonEntropySelf, KSEntropySelf, degreeEntropySelf, graphEntropySelf, motifEntropySelf, freqMBoxSelf
 
-def get_davids_vars(nodes,adj,only_freqs,d_vec):
-    #is only_freqs in the wrong order?
+def fix_adj(adj):
+    tmp_adj=adj
+    for i in range(len(adj)):
+        v=adj[i]
+        if sum(v)<1: #all zeros, delete index
+            tmp_adj=np.delete(np.delete(tmp_adj,i,axis=1),i,axis=0)
+    return adj
+
+def is_1step_connected(adj):
     sparse_adj = csgraph_from_dense(adj)
     pathDistMat = shortest_path(sparse_adj, method='auto', directed=False, return_predecessors=False, unweighted=True, overwrite=False)
+    if np.inf in pathDistMat: #problem: parsing has created a rift between the two components
+        return False
+    else:
+        return True
     
+def get_davids_vars(nodes,adj,only_freqs,d_vec,full_file):
+    #is only_freqs in the wrong order?
+    var_names=['comp_size','n_edges','edgeP','radius','kCore','degreeAssort_david','corr_path_hamm_dist','RMSE_path_hamm_dist','avg_degree','max_degree','mean_hamm_dist','mean_path_dist','diameter_path','diameter_hamm','corr_degree_freq','corr_eigen_cent_freq','corr_close_cent_freq','corr_bet_cent_freq','corrPageRankfreq','genetic_load','CV_freq','local_opt_frac','viable_fraction','scaled_spectral_radius','spectral_radius_adj','spectral_gap','spectral_radius_hamm','pop_entropy','von_entropy','ks_entropy','degree_entropy','avg_clust_coeff','global_efficiency','graph_entropy','motif_entropy','color_num']
+    sparse_adj = csgraph_from_dense(adj)
+    pathDistMat = shortest_path(sparse_adj, method='auto', directed=False, return_predecessors=False, unweighted=True, overwrite=False)
     triu_index=np.triu_indices(len(pathDistMat),k=1)
     pathDist = pathDistMat[triu_index]
-    print(len(pathDist))
-    if np.inf in pathDist: #have to fix pathDist if we aren't dealing with a 1-step connected network
-        print('if')
-        small_dvec=[]
-        small_pathdist=[]
-        for i in range(len(pathDist)):
-            d=pathDist[i]
-            if d!=np.inf:
-                small_dvec.append(d_vec[i])
-                small_pathdist.append(d)
-    else:
-        print("")
-        G = nx.Graph(adj) #G is adjacency matrix
-        small_dvec=d_vec
-        small_pathdist=pathDist
+    # print(len(pathDist))
+    if full_file: #doesn't work
+        comps_freqlist,major_comp,comps_info,num_comp=get_comp_freqs(adj,np.divide(only_freqs,sum(only_freqs),dtype=float))
+        links,seqs,adj_1,num_seqs=process_component(only_seqs,only_freqs,major_comp,comps_info,adj_1,DM)
+        only_seqs=list(seqs.keys())
+        only_freqs=list(seqs.values())
+        total_reads=float(sum(only_freqs))
+        rel_freq=np.divide(list(only_freqs),total_reads,dtype='float')
+        dvec,DM=get_dvec(only_seqs,num_seqs,seqlen)
+        
+    G = nx.Graph(adj) 
     #constants
     posNum = 15
     letters = 2
     u = 0.000115
-
     if nodes <= 3:
-        print("Sample %s has too few(%i) nodes" %(file,nodes))
+        # print("Sample %s has too few(%i) nodes" %(file,nodes))
+        return var_names,np.zeros(len(var_names))
     else:
         #print 'correlations'
         ## distance properties
-        diameterHamm = max(small_dvec)
-        avgHammDist = np.mean(small_dvec)
-        corrPathHammDist = np.corrcoef(small_dvec, small_pathdist)
-        RMSEPathHammDist = mean_squared_error(small_dvec, small_pathdist)
-        degreeRaw = list(G.degree()) 
+        diameterHamm = max(d_vec)
+        avgHammDist = np.mean(d_vec)
+        corrPathHammDist = np.corrcoef(d_vec, pathDist)
+        RMSEPathHammDist = mean_squared_error(d_vec, pathDist)
+        degreeRaw = list(G.degree())
         degree = []
         for i in degreeRaw:
             degree.append(i)
@@ -1311,7 +1294,7 @@ def get_davids_vars(nodes,adj,only_freqs,d_vec):
         viableFraction = sum(vs*eigenCent)
         # var_names_broken=['comp_size','n_edges','edgeP','radius','kCore','degreeAssort','corr_path_hamm_dist','RMSE_path_hamm_dist','avg_degree','max_degree','mean_hamm_dist','mean_path_dist','diameter_Path','diameter_Hamm','corr_degree_freq','corr_eigen_cent_freq','corr_close_cent_freq','corr_bet_cent_freq','corrPageRankfreq','genetic_load','CV_freq','localOptFrac','viable_fraction','scaledSpectralRadius','spectralRadiusAdj','spectralGap','spectralRadiusHamm','popEntropy','VonEntropy','KSEntropy','degreeEntropy','average_clustering_coeficcient','global_efficiency','motif_1_star','motif_2_path','motif_3_cycle','motif_4_tailed_triangle','motif_5_envelope','motif_6_clique','graphEntropy','motif_entropy','colorNum','pathDb','pathDbConstant','pathRSquare','pathModularity','pathModularityConstant','pathModularityRSquare']
         var_vals=[nodes,nEdges,edgeP,radius,kCore,degreeAssort,corrPathHammDist[0][1],RMSEPathHammDist,avgDegree,maxDegree,avgHammDist,avgPathDist,diameterPath,diameterHamm,corrDegreeFreq[0][1],corrEigenCentFreq[0][1],corrCloseCentFreq[0][1],corrBetCentFreq[0][1],corrPageRankfreq[0][1],geneticLoad,CV,localOptFrac,viableFraction,scaledSpectralRadius,spectralRadiusAdj,spectralGap,spectralRadiusHamm,popEntropy,vonEntropy,KSEntropy,degreeEntropy,avgClustCoeff,globalEfficiency,graphEntropy,motifEntropy,colorNum]
-        var_names=['comp_size','n_edges','edgeP','radius','kCore','degreeAssort_david','corr_path_hamm_dist','RMSE_path_hamm_dist','avg_degree','max_degree','mean_hamm_dist','mean_path_dist','diameter_path','diameter_hamm','corr_degree_freq','corr_eigen_cent_freq','corr_close_cent_freq','corr_bet_cent_freq','corrPageRankfreq','genetic_load','CV_freq','local_opt_frac','viable_fraction','scaled_spectral_radius','spectral_radius_adj','spectral_gap','spectral_radius_hamm','pop_entropy','von_entropy','ks_entropy','degree_entropy','avg_clust_coeff','global_efficiency','graph_entropy','motif_entropy','color_num']
+        
         return var_names,var_vals
     
 def get_status(sample):
@@ -1769,7 +1752,7 @@ def get_default_params():
     
 def main(files,output_name):
     data=pd.DataFrame()
-    full_file=True#david calc script errors out if it's true
+    full_file=False#david calc script errors out if it's true
     my_params=get_default_params()    
     for val in my_params:
         data[val]=0
@@ -1777,6 +1760,7 @@ def main(files,output_name):
     for i in range(num_samples):
         file=files[i]
         trim_file=trimfh(file)
+        print(trim_file)
         data.append(pd.Series(name=trim_file))
         status=get_status(file)
         data.at[trim_file,'status']=status
@@ -1818,7 +1802,6 @@ def main(files,output_name):
             adj_2=get_adj(DM,2,num_seqs)
         ###############calculate features###############
         # print(len(only_seqs))
-        # exit()
         
         data.at[trim_file,'num_haps']=num_seqs
         data.at[trim_file,'num_reads']=total_reads
@@ -1829,12 +1812,11 @@ def main(files,output_name):
         data.at[trim_file,'mean_dist']=mean_dist
         data.at[trim_file,'std_dev']=std_dev
         data.at[trim_file,'cv_dist']=cv_dist
-        david_var_names,david_var_vals=get_davids_vars(num_seqs,adj_1,only_freqs,dvec)
+        david_var_names,david_var_vals=get_davids_vars(num_seqs,adj_1,only_freqs,dvec,full_file)
         for i in range(len(david_var_vals)):
             name=david_var_names[i]
             val=david_var_vals[i]
             data.at[trim_file,name]=val
-        # print(list2str(david_var_vals))
         # corr_page_rank_freq=get_pagerank(seqs,only_freqs)
         # von_entropy, ks_entropy, degree_entropy_me = boxStats(g)        
         ent_vec=calc_ordered_frequencies(num_seqs,seqlen,seqs,True)
