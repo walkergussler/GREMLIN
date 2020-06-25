@@ -12,3 +12,5 @@ david/*
 doris_values.csv
 both/*
 *sh
+forward_selection*
+.vscode/*
