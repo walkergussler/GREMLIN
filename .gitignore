@@ -14,3 +14,12 @@ both/*
 *sh
 forward_selection*
 .vscode/*
+automl.err
+automl.txt
+david/*
+trash/*
+values_*
+old/*
+small*
+tmp*
+values.csv
