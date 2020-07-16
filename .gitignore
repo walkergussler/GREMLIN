@@ -12,3 +12,8 @@ david/*
 doris_values.csv
 both/*
 *sh
+automl*
+*csv
+old/*
+pyseqdist/*
+tmp*

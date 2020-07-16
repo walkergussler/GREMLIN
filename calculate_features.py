@@ -5,8 +5,7 @@ import networkx as nx
 import itertools, sys, os, inspect, re
 from math import log, floor, isclose
 from fractions import Fraction
-from codons import codons
-from classify import recency_bin
+# from classify import recency_bin
 from scipy.sparse.csgraph import connected_components,csgraph_from_dense, shortest_path
 from scipy.linalg import eig
 from scipy.stats import pearsonr, entropy, linregress, variation
@@ -14,15 +13,16 @@ from Bio import SeqIO, Seq, BiopythonWarning, pairwise2
 from collections import defaultdict, Counter
 from tempfile import NamedTemporaryFile
 from subprocess import check_call
-import ghost
+# import ghost
 import warnings
 from sklearn.metrics import mean_squared_error
-from pyseqdist import hamming as ghosthamm
+# from pyseqdist import hamming as ghosthamm
 warnings.simplefilter('ignore', BiopythonWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 #del viable_fraction
+codons = {"TTT": "F","TTC": "F","TTA": "L","TTG": "L","TCT": "S","TCC": "S","TCA": "S","TCG": "S","TAT": "Y","TAC": "Y","TAA": "STOP","TAG": "STOP","TGT": "C","TGC": "C","TGA": "STOP","TGG": "W","CTT": "L","CTC": "L","CTA": "L","CTG": "L","CCT": "P","CCC": "P","CCA": "P","CCG": "P","CAT": "H","CAC": "H","CAA": "Q","CAG": "Q","CGT": "R","CGC": "R","CGA": "R","CGG": "R","ATT": "I","ATC": "I","ATA": "I","ATG": "M","ACT": "T","ACC": "T","ACA": "T","ACG": "T","AAT": "N","AAC": "N","AAA": "K","AAG": "K","AGT": "S","AGC": "S","AGA": "R","AGG": "R","GTT": "V","GTC": "V","GTA": "V","GTG": "V","GCT": "A","GCC": "A","GCA": "A","GCG": "A","GAT": "D","GAC": "D","GAA": "E","GAG": "E","GGT": "G","GGC": "G","GGA": "G","GGG": "G"}
     
 def list2str(x):
     return ','.join(map(str,x))
@@ -72,7 +72,7 @@ def get_atchley(char):
     return atchley_dict[char]
 
     
-def calc_distance_matrix(finalSeqs): #calculate distance matrix from the 1-step list
+def calc_distance_matrix_ghost(finalSeqs): #calculate distance matrix from the 1-step list
     l=len(finalSeqs)
     arr=np.zeros([l,l])
     hdist=ghosthamm(finalSeqs,finalSeqs)
@@ -120,7 +120,7 @@ def kolmogorov_wrapper(seqs,seqlen): #TODO rel_freq
         s+=kolmogorov(seq,seqlen)*freq
     return s/float(total)
     
-def calc_distance_matrix_slow(finalSeqs): #calculate distance matrix from the 1-step list manually
+def calc_distance_matrix(finalSeqs): #calculate distance matrix from the 1-step list manually
     l=len(finalSeqs)
     arr=np.zeros([l,l])
     for id1,id2 in itertools.combinations(range(len(finalSeqs)),2):
@@ -1072,7 +1072,7 @@ def boxStats(boxNet): #fordavid other three calculated here?
     degreeRaw = list(boxNet.degree())
     degreeBox = []
     for i in degreeRaw:
-        degreeBox.append(i)
+        degreeBox.append(i[1])
     degreeNormBox = np.divide(degreeBox, np.sum(degreeBox), dtype = float)
     
     diameterPathBox = np.max(boxPathList)
@@ -1253,7 +1253,7 @@ def get_davids_vars(nodes,adj,only_freqs,d_vec,full_file):
         degreeRaw = list(G.degree())
         degree = []
         for i in degreeRaw:
-            degree.append(i)
+            degree.append(i[1])
         degreeNorm = np.divide(degree, np.sum(degree), dtype = float)
         eigenCentRaw = list(nx.eigenvector_centrality_numpy(G, weight=None).values())
         eigenCent = np.divide(eigenCentRaw, sum(eigenCentRaw), dtype = float)
@@ -1261,7 +1261,7 @@ def get_davids_vars(nodes,adj,only_freqs,d_vec,full_file):
         betCent = list(nx.betweenness_centrality(G).values())
         pageRank = list(nx.pagerank_numpy(G).values())
         # correlations
-        corrDegreeFreq = np.corrcoef(only_freqs, degree)
+        corrDegreeFreq = np.corrcoef(list(only_freqs), list(degree))
         corrEigenCentFreq = np.corrcoef(only_freqs, eigenCent)
         corrCloseCentFreq = np.corrcoef(only_freqs, closeCent)
         corrBetCentFreq = np.corrcoef(only_freqs, betCent)
@@ -1757,151 +1757,157 @@ def main(files,output_name):
     for val in my_params:
         data[val]=0
     num_samples=len(files)
-    for i in range(num_samples):
-        file=files[i]
-        trim_file=trimfh(file)
-        print(trim_file)
-        data.append(pd.Series(name=trim_file))
-        status=get_status(file)
-        data.at[trim_file,'status']=status
-        ###############setup###############
-        preseqs=get_good_seqs(file)
-        if len(preseqs)==0:
-            print(file+',reading frame error')
-            continue
-        ali=align(preseqs)
-        seqlen=len(list(ali.keys())[0])
-        seqs=remove_blanks(ali,seqlen)
-        seqlen=len(list(seqs.keys())[0]) #may have changed if a blank was removed from alignment
-        if type(seqs)==bool:
-            print(file+',error!')
-            continue
-        only_seqs=list(seqs.keys())
-        only_freqs=list(seqs.values())
-        num_seqs=len(seqs)
-        if num_seqs==0:
-            print(file+'error')
-            continue
-        total_reads=float(sum(only_freqs))
-        dvec,DM=get_dvec(only_seqs,num_seqs,seqlen) 
-        adj_1=get_adj(DM,1,num_seqs)
-        rel_freq=np.divide(list(only_freqs),total_reads,dtype='float')
-        if full_file:
-            g=nx.from_numpy_matrix(adj_1)
-            adj_2=get_adj(DM,2,num_seqs)
-            num_comp=np.nan
-        else:
-            comps_freqlist,major_comp,comps_info,num_comp=get_comp_freqs(adj_1,rel_freq)
-            links,seqs,adj_1,num_seqs=process_component(only_seqs,only_freqs,major_comp,comps_info,adj_1,DM)
+    try:
+        for i in range(num_samples):
+            file=files[i]
+            trim_file=trimfh(file)
+            data.append(pd.Series(name=trim_file))
+            status=int(get_status(file))
+            data.at[trim_file,'status']=status
+            ###############setup###############
+            preseqs=get_good_seqs(file)
+            if len(preseqs)==0:
+                print(file+',reading frame error')
+                continue
+            ali=align(preseqs)
+            seqlen=len(list(ali.keys())[0])
+            seqs=remove_blanks(ali,seqlen)
+            seqlen=len(list(seqs.keys())[0]) #may have changed if a blank was removed from alignment
+            if type(seqs)==bool:
+                print(file+',error!')
+                continue
             only_seqs=list(seqs.keys())
             only_freqs=list(seqs.values())
+            num_seqs=len(seqs)
+            if num_seqs<2:
+                print(file+'error')
+                continue
             total_reads=float(sum(only_freqs))
-            rel_freq=np.divide(list(only_freqs),total_reads,dtype='float')
             dvec,DM=get_dvec(only_seqs,num_seqs,seqlen) 
-            g=nx.from_numpy_matrix(adj_1)
-            adj_2=get_adj(DM,2,num_seqs)
-        ###############calculate features###############
-        # print(len(only_seqs))
-        
-        data.at[trim_file,'num_haps']=num_seqs
-        data.at[trim_file,'num_reads']=total_reads
-        
-        mean_dist=np.mean(dvec)
-        std_dev=get_std_dist(dvec)
-        cv_dist=std_dev/float(mean_dist)
-        data.at[trim_file,'mean_dist']=mean_dist
-        data.at[trim_file,'std_dev']=std_dev
-        data.at[trim_file,'cv_dist']=cv_dist
-        david_var_names,david_var_vals=get_davids_vars(num_seqs,adj_1,only_freqs,dvec,full_file)
-        for i in range(len(david_var_vals)):
-            name=david_var_names[i]
-            val=david_var_vals[i]
-            data.at[trim_file,name]=val
-        # corr_page_rank_freq=get_pagerank(seqs,only_freqs)
-        # von_entropy, ks_entropy, degree_entropy_me = boxStats(g)        
-        ent_vec=calc_ordered_frequencies(num_seqs,seqlen,seqs,True)
-        trans_mut=get_transver_mut(only_seqs,seqlen)  
-        data.at[trim_file,'trans_mut']=trans_mut
-        # data.at[trim_file,'ent_vec']=ent_vec
-        try:
-            pca_comps=get_pca_components(seqs,num_seqs,seqlen)  
-            data.at[trim_file,'pca_comps']=pca_comps  
-        except:
-            data.at[trim_file,'pca_comps']='nan'
-        kol_complexity=kolmogorov_wrapper(seqs,seqlen)
-        data.at[trim_file,'kol_complexity']=kol_complexity
-        s_metric=get_s_metric(g,num_seqs)
-        data.at[trim_file,'s_metric']=s_metric
-        cluster_coeff=get_cluster_coeff(adj_1,num_seqs,g)
-        data.at[trim_file,'cluster_coeff']=cluster_coeff
-        freq_corr=get_freq_corr(adj_2,only_freqs)   
-        data.at[trim_file,'freq_corr']=freq_corr
-        max_dist=np.max(dvec)
-        data.at[trim_file,'max_dist']=max_dist
-        phacelia_score=phacelia_API(file)
-        data.at[trim_file,'phacelia_score']=phacelia_score
-        dnds_val,proteins,prot_count=dnds_wrapper(seqs,only_freqs) #broken?
-        data.at[trim_file,'dnds_val']=dnds_val
-        prot_ratio=prot_count/num_seqs #3 #broken?
-        sd,wa,dists,stdrow=atchley(proteins,rel_freq)
-        
-        data.at[trim_file,'atchley_sdd_rowsum']=stdrow
-        for i in range(len(sd)):
-            sd_val=sd[i]
-            wa_val=wa[i]
-            d_val=dists[i]
-            sd_name='atchley_sd'+str(i)
-            wa_name='atchley_wa'+str(i)
-            d_name='atchley_dist'+str(i)
-            data.at[trim_file,sd_name]=sd_val
-            data.at[trim_file,wa_name]=wa_val
-            data.at[trim_file,d_name]=d_val
-        data.at[trim_file,'atchley_dist_cat']=dists[-1]#'atchley_dist_cat'???
-        prot_seqsonly=list(proteins.keys())
-        prot_freqs=list(proteins.values())
-        protnum=len(proteins)
-        protlen=len(prot_seqsonly[0])
-        protein_nuc_entropy=nuc_entropy_inscape(proteins,protnum,protlen)
-        data.at[trim_file,'protein_nuc_entropy']=protein_nuc_entropy
-        one_step_entropy=calc_1step_entropy(adj_1,only_freqs)
-        data.at[trim_file,'one_step_entropy']=one_step_entropy
-        data.at[trim_file,'num_1step_components']=num_comp
-        freq_entropy=entropy(rel_freq,base=2)
-        data.at[trim_file,'freq_entropy']=freq_entropy
-        nuc_div=nuc_div_inscape(only_freqs,DM,seqlen,num_seqs)
-        data.at[trim_file,'nuc_div']=nuc_div
-        nuc_entropy=sum(ent_vec)/len(ent_vec)#nuc_entropy_inscape
-        data.at[trim_file,'nuc_entropy']=nuc_entropy
-        pelin_haplo_freq=entropy(rel_freq,base=2)/log(num_seqs,2)
-        data.at[trim_file,'pelin_haplo_freq']=pelin_haplo_freq
-        for k in range(1,11):
-            if k!=1:
-                kmer_nuc_inscape=kmer_entropy_inscape(seqs,k)
-                kmer_prot_inscape=kmer_entropy_inscape(proteins,k)
-                data.at[trim_file,'aa_kmer_inscape_'+str(k)]=kmer_prot_inscape
-                data.at[trim_file,'nuc_kmer_inscape_'+str(k)]=kmer_nuc_inscape
-            kmer_nuc_pelin=kmer_entropy_pelin(only_seqs,seqlen,k)
-            kmer_prot_pelin=kmer_entropy_pelin(prot_seqsonly,protlen,k)
-            data.at[trim_file,'nuc_kmer_pelin_'+str(k)]=kmer_nuc_pelin
-            data.at[trim_file,'aa_kmer_pelin_'+str(k)]=kmer_prot_pelin
-        mut_freq=get_mutation_freq(seqs,only_seqs,only_freqs,seqlen)
-        data.at[trim_file,'mut_freq']=mut_freq
-        mean_cons=nuc44_consensus(only_seqs,seqlen,num_seqs)  
-        data.at[trim_file,'mean_cons']=mean_cons
-        # pelin_nuc_entropy=kmer_entropy_pelin(only_seqs,seqlen,1) #
-        # dumb_epistasis=calc_dumb_epistasis(std_dev,only_seqs,seqlen,num_seqs)
-        # david_epis,pavel_epis=david_and_pavel_epistasis(only_seqs,only_freqs,list(ent_vec),num_seqs,seqlen,total_reads)
-        prot_ent_vec=calc_ordered_frequencies(protnum,protlen,proteins,True)
-        aa_entropy_inscape=sum(prot_ent_vec)/len(prot_ent_vec)
-        data.at[trim_file,'aa_entropy_inscape']=aa_entropy_inscape
-        # david_prot_epis,pavel_prot_epis=david_and_pavel_epistasis(prot_seqsonly,prot_freqs,list(prot_ent_vec),protnum,protlen,sum(prot_freqs))
-        if sum(sum(adj_1))>0:
-            degree_assortativity_me=degree_corell(g) #1
-            degree_entropy_me=degree_distribution(g) #2
-            data.at[trim_file,'degree_assortativity_me']=degree_assortativity_me
-            data.at[trim_file,'degree_entropy_me']=degree_entropy_me
-    data.to_csv(output_name)
-    
+            adj_1=get_adj(DM,1,num_seqs)
+            rel_freq=np.divide(list(only_freqs),total_reads,dtype='float')
+            if full_file:
+                g=nx.from_numpy_matrix(adj_1)
+                adj_2=get_adj(DM,2,num_seqs)
+                num_comp=np.nan
+            else:
+                comps_freqlist,major_comp,comps_info,num_comp=get_comp_freqs(adj_1,rel_freq)
+                links,seqs,adj_1,num_seqs=process_component(only_seqs,only_freqs,major_comp,comps_info,adj_1,DM)
+                only_seqs=list(seqs.keys())
+                only_freqs=list(seqs.values())
+                total_reads=float(sum(only_freqs))
+                rel_freq=np.divide(list(only_freqs),total_reads,dtype='float')
+                dvec,DM=get_dvec(only_seqs,num_seqs,seqlen) 
+                g=nx.from_numpy_matrix(adj_1)
+                adj_2=get_adj(DM,2,num_seqs)
+            ###############calculate features###############
+            # print(len(only_seqs))
+            if num_seqs<2:
+                print(file+" only has one viable sequence! skipping")
+                continue
+            print(trim_file,num_seqs)
+            
+            data.at[trim_file,'num_haps']=int(num_seqs)
+            data.at[trim_file,'num_reads']=int(total_reads)
+            
+            mean_dist=np.mean(dvec)
+            std_dev=get_std_dist(dvec)
+            cv_dist=std_dev/float(mean_dist)
+            data.at[trim_file,'mean_dist']=mean_dist
+            data.at[trim_file,'std_dev']=std_dev
+            data.at[trim_file,'cv_dist']=cv_dist
+            david_var_names,david_var_vals=get_davids_vars(num_seqs,adj_1,only_freqs,dvec,full_file)
+            for i in range(len(david_var_vals)):
+                name=david_var_names[i]
+                val=david_var_vals[i]
+                data.at[trim_file,name]=val
+            # corr_page_rank_freq=get_pagerank(seqs,only_freqs)
+            # von_entropy, ks_entropy, degree_entropy_me = boxStats(g)        
+            ent_vec=calc_ordered_frequencies(num_seqs,seqlen,seqs,True)
+            trans_mut=get_transver_mut(only_seqs,seqlen)  
+            data.at[trim_file,'trans_mut']=trans_mut
+            # data.at[trim_file,'ent_vec']=ent_vec
+            try:
+                pca_comps=get_pca_components(seqs,num_seqs,seqlen)  
+                data.at[trim_file,'pca_comps']=pca_comps  
+            except:
+                data.at[trim_file,'pca_comps']='nan'
+            kol_complexity=kolmogorov_wrapper(seqs,seqlen)
+            data.at[trim_file,'kol_complexity']=kol_complexity
+            s_metric=get_s_metric(g,num_seqs)
+            data.at[trim_file,'s_metric']=s_metric
+            cluster_coeff=get_cluster_coeff(adj_1,num_seqs,g)
+            data.at[trim_file,'cluster_coeff']=cluster_coeff
+            freq_corr=get_freq_corr(adj_2,only_freqs)   
+            data.at[trim_file,'freq_corr']=freq_corr
+            max_dist=np.max(dvec)
+            data.at[trim_file,'max_dist']=max_dist
+            # phacelia_score=phacelia_API(file)
+            # data.at[trim_file,'phacelia_score']=phacelia_score
+            dnds_val,proteins,prot_count=dnds_wrapper(seqs,only_freqs) #broken?
+            data.at[trim_file,'dnds_val']=dnds_val
+            prot_ratio=prot_count/num_seqs #3 #broken?
+            sd,wa,dists,stdrow=atchley(proteins,rel_freq)
+            
+            data.at[trim_file,'atchley_sdd_rowsum']=stdrow
+            for i in range(len(sd)):
+                sd_val=sd[i]
+                wa_val=wa[i]
+                d_val=dists[i]
+                sd_name='atchley_sd'+str(i)
+                wa_name='atchley_wa'+str(i)
+                d_name='atchley_dist'+str(i)
+                data.at[trim_file,sd_name]=sd_val
+                data.at[trim_file,wa_name]=wa_val
+                data.at[trim_file,d_name]=d_val
+            data.at[trim_file,'atchley_dist_cat']=dists[-1]#'atchley_dist_cat'???
+            prot_seqsonly=list(proteins.keys())
+            prot_freqs=list(proteins.values())
+            protnum=len(proteins)
+            protlen=len(prot_seqsonly[0])
+            protein_nuc_entropy=nuc_entropy_inscape(proteins,protnum,protlen)
+            data.at[trim_file,'protein_nuc_entropy']=protein_nuc_entropy
+            one_step_entropy=calc_1step_entropy(adj_1,only_freqs)
+            data.at[trim_file,'one_step_entropy']=one_step_entropy
+            data.at[trim_file,'num_1step_components']=num_comp
+            freq_entropy=entropy(rel_freq,base=2)
+            data.at[trim_file,'freq_entropy']=freq_entropy
+            nuc_div=nuc_div_inscape(only_freqs,DM,seqlen,num_seqs)
+            data.at[trim_file,'nuc_div']=nuc_div
+            nuc_entropy=sum(ent_vec)/len(ent_vec)#nuc_entropy_inscape
+            data.at[trim_file,'nuc_entropy']=nuc_entropy
+            pelin_haplo_freq=entropy(rel_freq,base=2)/log(num_seqs,2)
+            data.at[trim_file,'pelin_haplo_freq']=pelin_haplo_freq
+            for k in range(1,11):
+                if k!=1:
+                    kmer_nuc_inscape=kmer_entropy_inscape(seqs,k)
+                    kmer_prot_inscape=kmer_entropy_inscape(proteins,k)
+                    data.at[trim_file,'aa_kmer_inscape_'+str(k)]=kmer_prot_inscape
+                    data.at[trim_file,'nuc_kmer_inscape_'+str(k)]=kmer_nuc_inscape
+                kmer_nuc_pelin=kmer_entropy_pelin(only_seqs,seqlen,k)
+                kmer_prot_pelin=kmer_entropy_pelin(prot_seqsonly,protlen,k)
+                data.at[trim_file,'nuc_kmer_pelin_'+str(k)]=kmer_nuc_pelin
+                data.at[trim_file,'aa_kmer_pelin_'+str(k)]=kmer_prot_pelin
+            mut_freq=get_mutation_freq(seqs,only_seqs,only_freqs,seqlen)
+            data.at[trim_file,'mut_freq']=mut_freq
+            mean_cons=nuc44_consensus(only_seqs,seqlen,num_seqs)  
+            data.at[trim_file,'mean_cons']=mean_cons
+            # pelin_nuc_entropy=kmer_entropy_pelin(only_seqs,seqlen,1) #
+            # dumb_epistasis=calc_dumb_epistasis(std_dev,only_seqs,seqlen,num_seqs)
+            # david_epis,pavel_epis=david_and_pavel_epistasis(only_seqs,only_freqs,list(ent_vec),num_seqs,seqlen,total_reads)
+            prot_ent_vec=calc_ordered_frequencies(protnum,protlen,proteins,True)
+            aa_entropy_inscape=sum(prot_ent_vec)/len(prot_ent_vec)
+            data.at[trim_file,'aa_entropy_inscape']=aa_entropy_inscape
+            # david_prot_epis,pavel_prot_epis=david_and_pavel_epistasis(prot_seqsonly,prot_freqs,list(prot_ent_vec),protnum,protlen,sum(prot_freqs))
+            
+            if sum(sum(adj_1))>2:
+                degree_assortativity_me=degree_corell(g) #1
+                degree_entropy_me=degree_distribution(g) #2
+                data.at[trim_file,'degree_assortativity_me']=degree_assortativity_me
+                data.at[trim_file,'degree_entropy_me']=degree_entropy_me
+    finally:
+        data.to_csv(output_name)
+
 if __name__=='__main__':
     try:
         output_name=sys.argv[1]
