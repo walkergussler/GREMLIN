@@ -1,21 +1,25 @@
-# Detection Of Recent hcv InfectionS (DORIS)
+#  automagic Genomic featuRe Engineering and Machine LearnINg (GREMLIN)
+automated genomic feature engineering, feature selection and machine learning package for data mining and accurate automatic machine learning oh viral populations sequenced via amplicon NGS sequencing. 
 
-Python3 software which predicts whether HCV patients have been infected for more or less than one year 
+Software written in Python3. Originally designed to predict whether HCV patients have been infected for more or less than one year. Recently infected patients are often more valuable for peer education and treatment as they are often PWID whom are involved in an ongoing infection process
 
-Recently infected patients are often more valuable for peer education and treatment as they are often PWID whom are involved in an ongoing infection process
+Previous efforts are either not accurate enough or prone to overtraining deficiencies. We realized that we would need to be able to obtain new feature sets on the fly whenever we are presented with new data. This package solves that problem by calculating a feature set of roughly 100 biologically relevant variables, then selecting a small subset of the original variables, then performing sequential feature selection to choose a model which is as accurate and generalizable as possible. 
 
-Previous efforts are either not accurate enough or prone to overtraining deficiencies 
+The software cannot distinguish data with randomly assigned labels, however can consistently deliver models with 96% accuracy on the HCV recency problem. 
 
-## Feature calculation programs
+## Using the software
 
-### final_echlin.py  
+#### calculate_features.py
 
-Calculates the 11 features used in the final model
+Input: a folder with ```.FASTA``` files in which each genomic sample is represented by a multiple sequence alignment (MSA) of the population of variants. Each unique sequence gets its own entry, and frequencies are represented in the ID line following the last underscore. 
 
-### calculate_parameters.py 
+Output: Calculates the large feature set, makes a file ```values.csv``` in which the rows are built from the list of genomic samples, and the columns are the engineered features. 
 
-Calculates 42 features, some of which are included in the final model. <br/>
-Functionality to calculate 68 other experimental features is not contained in this repository
+#### automatic_feature_selection.py
+
+Input: ```values.csv``` output file from ```calculate_features.py```. 
+
+Output: ```final_model.csv``` as well as some text to STDOUT which displays accuracy information and time statements.
 
 ## Feature selection routines
 
@@ -23,7 +27,7 @@ These scripts will take in a CSV file with feature vector information, clusters 
 
 ### kmeans_model_maker.py 
 
-Uses K-means clustering to cluster the features, and then select the feature from each cluster which has the highest model importance score 
+Uses K-means clustering to cluster the features, and then select the feature from each cluster which has the highest model importance score  
 
 ### correlation_cliques.py 
 
