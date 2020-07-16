@@ -12,8 +12,22 @@ david/*
 doris_values.csv
 both/*
 *sh
+<<<<<<< HEAD
 automl*
 *csv
 old/*
 pyseqdist/*
 tmp*
+=======
+forward_selection*
+.vscode/*
+automl.err
+automl.txt
+david/*
+trash/*
+values_*
+old/*
+small*
+tmp*
+values.csv
+>>>>>>> 9586fe3673d80e32955589f478e97a2b79dfbd8b

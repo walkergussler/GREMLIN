@@ -6,7 +6,10 @@ from scipy.stats import pearsonr
 import pandas as pd
 from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier
 import time
+<<<<<<< HEAD
 from sys import argv
+=======
+>>>>>>> 9586fe3673d80e32955589f478e97a2b79dfbd8b
 
 def list2str(x):
     return ','.join(map(str,x))
@@ -14,8 +17,13 @@ def list2str(x):
 def ml_data_parser(file):
     data=pd.read_csv(file)
     y=data['status']
+<<<<<<< HEAD
     X=data.drop(['file','10_hamming','genotype','status'],axis=1)
     # X=data.drop(['sample','status'],axis=1)
+=======
+    # X=data.drop(['file','10_hamming','genotype','status'],axis=1)
+    X=data.drop(['sample','status'],axis=1)
+>>>>>>> 9586fe3673d80e32955589f478e97a2b79dfbd8b
     return X,np.array(y)
     
 def select_from_groups(X,scores,num_groups=3):
@@ -108,6 +116,7 @@ def run_sfs(X,y,num_features):
                cv=5)
     return feature_searcher.fit(X, y)
 
+<<<<<<< HEAD
 def main(data_source):
     #arguments
     MIN_FEATURES=6 #exhaustive search options
@@ -119,6 +128,19 @@ def main(data_source):
     # X,y=ml_data_parser('tmp.csv')    
     X,names=only_useful_vars(X,y)
     
+=======
+def main():
+    #arguments
+    MIN_FEATURES=6 #exhaustive search options
+    MAX_FEATURES=6 #exhaustive search options
+    VERBOSE=True
+    
+    starttime=time.time()
+    # X,y=ml_data_parser('values.csv')    
+    X,y=ml_data_parser('tmp.csv')    
+    X,names=only_useful_vars(X,y)
+
+>>>>>>> 9586fe3673d80e32955589f478e97a2b79dfbd8b
     if VERBOSE:
         print('selected %i variables for search:'%len(names))
         print(', '.join(names))
@@ -153,9 +175,14 @@ def main(data_source):
     print("completed successfully in %.2f seconds. exiting" %x)
 
 if __name__=="__main__":
+<<<<<<< HEAD
     #TODO: export other args
     try:
         data_source=sys.argv[1]
     except:
         data_source='values.csv'
     main(data_source)
+=======
+    #TODO: export args
+    main()
+>>>>>>> 9586fe3673d80e32955589f478e97a2b79dfbd8b
