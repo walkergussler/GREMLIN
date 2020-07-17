@@ -1,6 +1,0 @@
-
-n1,n2,hamming,adjacent?,path_dist,freq1,freq2
-
-path_dists = shortest_path(sparseMatrixComp, method='auto', directed=False, return_predecessors=False, unweighted=True, overwrite=False)    
-
-str(p) + ',' + str(q) + ',' + str(dists[realp,realq]) + ',' + str(adj_comp[p][q]) + ',' + str(path_dists[p][q]) +  ',' + str(only_freqs[realp]) + ',' + str(only_freqs[realq]) + '\n')

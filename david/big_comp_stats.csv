@@ -1,5 +1,0 @@
-file_name,seqnum,reads,Total_number_components,number_big_components,frequency_threshold,total_big_frequency,work_time 
-test/DGO_new.fas,111,27629,1,1,1381.45,1.0,5.6403889656066895
-test/HepRP16-1_2b.fasta,1529,8185,256,1,409.25,0.9686010995723885,34.754157304763794
-test/KOM_P011.fas,27,1077,3,1,53.85,0.9981429897864438,0.4975013732910156
-test/MSMPAN4_new.fas,4,417,2,1,20.85,0.9664268585131894,0.32335925102233887
