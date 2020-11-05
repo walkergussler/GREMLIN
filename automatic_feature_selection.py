@@ -6,23 +6,10 @@ from scipy.stats import pearsonr
 import pandas as pd
 from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier
 import time
-<<<<<<< HEAD
 from sys import argv
 
 def list2str(x):
     return ','.join(map(str,x))
-
-def ml_data_parser(file):
-    data=pd.read_csv(file)  
-    y=data['status']
-<<<<<<< HEAD
-    X=data.drop(['file','10_hamming','genotype','status'],axis=1)
-    # X=data.drop(['sample','status'],axis=1)
-=======
-    # X=data.drop(['file','10_hamming','genotype','status'],axis=1)
-    X=data.drop(['sample','status'],axis=1)
->>>>>>> 9586fe3673d80e32955589f478e97a2b79dfbd8b
-    return X,np.array(y)
     
 def select_from_groups(X,scores,num_groups=3):
     """
@@ -114,14 +101,15 @@ def run_sfs(X,y,num_features):
                cv=5)
     return feature_searcher.fit(X, y)
 
-<<<<<<< HEAD
-def main(data_source):
+def build_model(data):
+    starttime=time.time()
     #arguments
     MIN_FEATURES=6 #exhaustive search options
     MAX_FEATURES=12 #exhaustive search options
     VERBOSE=True
-    
-    starttime=time.time()
+    y=np.array(data['status'])
+    X=data.drop(['status'],axis=1)
+
     X,names=only_useful_vars(X,y)
     
     if VERBOSE:
@@ -160,59 +148,15 @@ def main(data_source):
     x=time.time()-starttime
     print("completed successfully in %.2f seconds. exiting" %x)
     return out_data
-    
 
-def main(data_source):
-    output="final_model.csv"
-    #arguments
-    MIN_FEATURES=6 #exhaustive search options
-    MAX_FEATURES=12 #exhaustive search options
-    VERBOSE=True
-    
-    starttime=time.time()
-    X,y=ml_data_parser(data_source)
-    # X,y=ml_data_parser('tmp.csv')
-    X,names=only_useful_vars(X,y)
-    
-    if VERBOSE:
-        print('selected %i variables for search:'%len(names))
-        print(', '.join(names))
-        print("===")
-        print("beginning exhaustive search...")
-        x=time.time()-starttime
-        print('time: %.2f seconds'% x)
-        print("===")
-    
-    models=[]
-    scores=[]
-    for i in range(MIN_FEATURES,MAX_FEATURES+1):
-        model=run_sfs(X,y,i)
-        score=model.k_score_
-        models.append(model)
-        scores.append(score)
-        if VERBOSE:
-            print(i,score)
-    max_score=max(scores)
-    
-    chosen_model=models[scores.index(max(scores))]
-    if VERBOSE:
-        print('\nsubsets:')
-        for i in chosen_model.subsets_:
-            item=chosen_model.subsets_[i]            
-            print('model %i=%.3f'%(i,item['avg_score']))
-            print(list2str(item['feature_names']))
-        print('Best subset (indices):', chosen_model.k_feature_idx_)
-    print('Best subset (names):', chosen_model.k_feature_names_)
-    print('Score: %.3f' % chosen_model.k_score_)
-    
-    # X.to_csv(output_name)
-    # x=time.time()-starttime
-    print("completed successfully in %.2f seconds. exiting" %x)
+def main(data_file):
+    data=pd.read_csv(data_file)
+    build_model(data)
 
 if __name__=="__main__":
     #TODO: export other args
     try:
         data_source=sys.argv[1]
     except:
-        data_source='values.csv'
+        data_source='random_values.csv'
     main(data_source)
