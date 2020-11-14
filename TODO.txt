@@ -1,0 +1,7 @@
+bonus challenge: make it able to handle NR_1
+	impossibru bonus challenge: make it able to handle NR_2
+option for min/max number of variables for the end model in wrapper
+actually save all models and re-evaluate using groupkfold
+
+-computational efficiency-
+convex hull for determining groups 

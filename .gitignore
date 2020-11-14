@@ -17,3 +17,10 @@ old/*
 pyseqdist/*
 tmp*
 requirements.txt
+medium_samples/*
+group_looker.py
+*fas
+.vscode/*
+all_samples/
+make_groups.py
+

@@ -1,26 +1,35 @@
 import argparse, os
-from calculate_features import wrapper_main as feature_getter
+if '__pycache__' in os.listdir(os.getcwd()):#TODO: clean this up somehow, or delete it?
+  os.system('rm -rf __pycache__')
+from calculate_features import main as feature_getter
 from automatic_feature_selection import build_model as feature_selector
+
+def eat_dir(path,value,status_dic):
+  for file in os.listdir(path):
+    if file.endswith('fas') or file.endswith('fa') or file.endswith('fasta'):
+      status_dic[file]=value
+  return status_dic
 
 def main(dir_0,dir_1,full_file,output,save_intermediate):
   status_dic={}
-  for file in os.listdir(dir_0):
-    status_dic[file]=0
-  for file in os.listdir(dir_1):
-    status_dic[file]=1
+  status_dic=eat_dir(dir_0,0,status_dic)
+  status_dic=eat_dir(dir_1,1,status_dic)
   big_data=feature_getter(status_dic,dir_0,dir_1)
-  small_data=feature_selector(big_data)
-  small_data.to_csv(output+'.csv')
   if save_intermediate:
+    
     big_data.to_csv(output+'_full.csv')
 
+  small_data=feature_selector(big_data)
+  small_data.to_csv(output+'.csv')
+  
+  
 if __name__=="__main__":
   parser=argparse.ArgumentParser(description="Wrapper for GREMLIN for feature engineering and automated machine learning")
   parser.add_argument('-i0', '--dir_0', 
-    type=str, required=False, default='./samples/recent/', 
+    type=str, required=False, default='./all_samples/recent/', 
     help="Folder with your samples from your '0' class")
   parser.add_argument('-i1', '--dir_1', 
-    type=str, required=False, default='./samples/non-recent/', 
+    type=str, required=False, default='./all_samples/non_recent/', 
     help="Folder with your samples from your '1' class")
   parser.add_argument('-f', '--full_file', #is this bugged? may not work
     action='store_true', default=False, 

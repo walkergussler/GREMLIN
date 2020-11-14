@@ -821,6 +821,8 @@ def get_good_seqs(file): #find appropriate reading frame, return sequences with 
         return ones
     elif t==m:
         return twos
+    else:
+        exit('why has this happened?')
  
 def dnds_wrapper(seqs,freqs):
     total_freq=sum(freqs)
@@ -1744,24 +1746,22 @@ def get_default_params():
         my_params.append('aa_kmer_pelin_'+str(k+1))
     return my_params
 
-def less_than_x(seq1,seq2,x=10): 
+
+def calc_dists_inner(seq1,seq2): 
     dist=0
     for a,b in zip(seq1,seq2):
         if a!=b:
             dist+=1
-        if dist==x:
+        if dist==10:
             return False
     return True
 
-def min_hamming_calculator(seqs1,seqs2):
-    seqs1_num=len(seqs1)
+def calc_dists(seq1,seqs2):
     seqs2_num=len(seqs2)
-    for i in range(seqs1_num):
-        seq1=seqs1[i]
-        for j in range(seqs2_num):
-            seq2=seqs2[j]
-            if less_than_x(seq1,seq2,10):
-                return True
+    for j in range(seqs2_num):
+        seq2=seqs2[j]        
+        if calc_dists_inner(seq1,seq2)<10:
+            return True
     return False
 
 def calculate_groups(data,all_seqs):
@@ -1771,22 +1771,15 @@ def calculate_groups(data,all_seqs):
     for f1,f2 in itertools.combinations(files,2):
         seqs1=all_seqs[f1]
         seqs2=all_seqs[f2]
-        if min_hamming_calculator(seqs1,seqs2):
-            g.add_edge(f1,f2)
-            print(f1,f2,'yes')
-        else:
-            print(f1,f2,'no')
+        seqs1_num=len(seqs1)
+        for i in range(seqs1_num):
+            seq1=seqs1[i]
+            if calc_dists(seq1,seqs2):
+                g.add_edge(f1,f2)
     counter=0
     for comp in nx.connected_components(g):
         counter+=1
         for file in comp:
-            data.loc[file,'group']=counter
-    #if a file isn't connected to any other files, give it it's own component- no file should have 0 as its group
-    for row in data.iterrows():
-        file=row[0]
-        row_data=row[1]
-        if row_data['group']==0:
-            counter+=1
             data.loc[file,'group']=counter
     return data
 
@@ -1965,12 +1958,11 @@ def main(status_dic,dir_0,dir_1):
             degree_entropy_me=degree_distribution(g) #2
             data.at[trim_file,'degree_assortativity_me']=degree_assortativity_me
             data.at[trim_file,'degree_entropy_me']=degree_entropy_me
-    data=calculate_groups(data,all_seqs)
     return data
 
 def main_manual(files,output_name):
     data=pd.DataFrame()
-    full_file=False #TODO: david calc script errors out if it's true
+    full_file=False#TODO: david calc script errors out if it's true
     my_params=get_default_params()
     all_seqs={}
     for val in my_params:
@@ -2135,7 +2127,7 @@ if __name__=='__main__':
     except:
         output_name='tmp.csv'
     files=[]
-    for file in os.listdir(os.getcwd()):
+    for file in os.listdir(os.getcwd()):    
         if file.endswith('fas') or file.endswith('fasta') or file.endswith('fa'):
             files.append(file)
     main_manual(files,output_name)

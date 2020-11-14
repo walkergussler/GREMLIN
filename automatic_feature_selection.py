@@ -5,34 +5,37 @@ from skrebate import MultiSURF
 from scipy.stats import pearsonr
 import pandas as pd
 from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier
+from sklearn.preprocessing import MinMaxScaler
 import time
 from sys import argv
 
 def list2str(x):
     return ','.join(map(str,x))
     
-def select_from_groups(X,scores,num_groups=3):
+def select_from_groups(X,scores,keywords=['atchley','nuc_kmer','aa_kmer']):
     """
     Step 1
     Select only one variable from each of the user defined groups of related variables
-    """
-    names=[]; values=[]
-    for i in range(num_groups):
-        names.append('')
-        values.append(0)
-    
-    for i,j in zip(X.columns,scores):
-        if '#' in i:
-            index=int(i.split('#')[1])
-            winner_val=values[index]
-            if j>winner_val:
-                names[index]=i
-                values[index]=j
-    for i,j in zip(X.columns,scores):
-        if '#' in i:
-            index=int(i.split('#')[1])
-            if i!=names[index]:
-                X=X.drop(i,axis=1)
+    """    
+    all_names=list(X.columns)
+    valuable={}
+    for keyword in keywords:
+        valuable[keyword]=['',-100]
+
+    #get names of 3 important variables from each group
+    for name,score in zip(all_names,scores):
+        for keyword in keywords:
+            if keyword in name:
+                current_name,current_val=valuable[keyword]
+                if score>current_val:
+                    valuable[keyword]=[current_name,current_val]
+    #remove all in-group vars which aren't the important one
+    for name in all_names:
+        for keyword in keywords:
+            if keyword in name:
+                winner=valuable[keyword][0]
+                if name!=winner:
+                    X=X.drop(name,axis=1)
     return X
 
 def skrebate_selection(X,scores):
@@ -40,8 +43,8 @@ def skrebate_selection(X,scores):
     Step 2
     Remove approximately half of the features according to scores
     """
-    tf=scores>0 #change sensitivity here
-    return X.iloc[:,pd.Series(tf).values],tf 
+    tf=scores>=0 #change sensitivity here
+    return X.iloc[:,pd.Series(tf).values]
     
 def correl_reduce(X,scores,t):
     """
@@ -56,7 +59,7 @@ def correl_reduce(X,scores,t):
         v1=X_arr[:,i]
         for j in range(i+1,tmp_varnum):
             v2=X_arr[:,j]
-            cor,_=pearsonr(v1,v2)
+            cor,_=pearsonr(v1,v2)   
             r_sq=cor*cor
             trigger=corr_elim[i]+corr_elim[j]==2
             if r_sq>t and trigger:
@@ -82,7 +85,7 @@ def only_useful_vars(X,y,correl_treshold=.8):
     print("number of variables after 1st reduction: %i"%X.shape[1])
     #step 2
     scores=MultiSURF().fit(np.array(X),y).feature_importances_
-    X,tf=skrebate_selection(X,scores)
+    X=skrebate_selection(X,scores)
     print("number of variables after 2nd reduction: %i"%X.shape[1])
     #step 3
     scores=MultiSURF().fit(np.array(X),y).feature_importances_
@@ -101,6 +104,22 @@ def run_sfs(X,y,num_features):
                cv=5)
     return feature_searcher.fit(X, y)
 
+def normalize_input(X):
+    #nancheck: X.isnull().values.any()
+    a=X.values
+    inds = np.where(np.isnan(a))
+    col_means = np.nanmean(a, axis=0)
+    a[inds] = np.take(col_means, inds[1])
+    a=MinMaxScaler().fit_transform(a)
+    X[:]=a
+    if X.isnull().values.any():
+        print('NAN value in data! exiting')
+        a=X.values
+        inds = np.where(np.isnan(a))
+        print(inds)
+        exit()
+    return X
+    
 def build_model(data):
     starttime=time.time()
     #arguments
@@ -109,7 +128,7 @@ def build_model(data):
     VERBOSE=True
     y=np.array(data['status'])
     X=data.drop(['status'],axis=1)
-
+    X=normalize_input(X)
     X,names=only_useful_vars(X,y)
     
     if VERBOSE:
@@ -130,8 +149,9 @@ def build_model(data):
         scores.append(score)
         if VERBOSE:
             print(i,score)
-    max_score=max(scores)
     
+    #chosen_model=group(models,groups)#TODO:add groups to calculate parameters
+    # max_score=max(scores)#TODO: push useful small python scripts 
     chosen_model=models[scores.index(max(scores))]
     if VERBOSE:
         print('\nsubsets:')
@@ -142,7 +162,7 @@ def build_model(data):
         print('Best subset (indices):', chosen_model.k_feature_idx_)
     print('Best subset (names):', chosen_model.k_feature_names_)
     print('Score: %.3f' % chosen_model.k_score_)
-    out_data=X[chosen_model.k_feature_names_]
+    chosen_features=chosen_model.k_feature_names_
     out_data['status']=pd.Series(y)
     out_data.to_csv(output_name)
     x=time.time()-starttime
