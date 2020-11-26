@@ -5,7 +5,7 @@ import networkx as nx
 import itertools, sys, os, inspect, re
 from math import log, floor, isclose
 from fractions import Fraction
-# from classify import recency_bin
+# from phacelia import recency_bin
 from scipy.sparse.csgraph import connected_components,csgraph_from_dense, shortest_path
 from scipy.linalg import eig
 from scipy.stats import pearsonr, entropy, linregress, variation

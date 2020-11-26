@@ -2,6 +2,15 @@ bonus challenge: make it able to handle NR_1
 	impossibru bonus challenge: make it able to handle NR_2
 option for min/max number of variables for the end model in wrapper
 actually save all models and re-evaluate using groupkfold
+make the model care more about recent infections
+
+-charts to make-
+oversampling/undersampling
+different ML methods
+sequentialfeatureselector accuracy for 5 machine learning model types
+comparing groupkfold accuracy to regular accuracy
+comparing full file accuracy to one step component only accuracy
+how well do we classify random data?
 
 -computational efficiency-
 convex hull for determining groups 
